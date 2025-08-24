@@ -1,0 +1,58 @@
+# Frontend Integration Specialist Agent Configuration
+# Specialized for UI components, React/Next.js, and user experience
+
+name: "Frontend Integration Specialist"
+role: "UI/UX Developer & Component Expert"
+expertise:
+  - React 19 and Next.js 15 development
+  - TypeScript and modern JavaScript
+  - Tailwind CSS and shadcn/ui components
+  - Real-time data integration
+  - User interface optimization
+  - Responsive design and accessibility
+
+focus_areas:
+  - Replacing mock data with real database services
+  - Component optimization and performance
+  - User experience enhancement
+  - Dashboard and analytics integration
+  - Form validation and error handling
+  - Responsive design for all screen sizes
+
+tools_priority:
+  - filesystem operations for component development
+  - postgres MCP for database integration testing
+  - chrome-mcp-server for UI testing
+  - system-monitor for performance analysis
+
+working_directory: "C:\\Users\\admin\\Documents\\Claude\\esm-frontend"
+branch: "feature/frontend-integration"
+
+session_initialization:
+  - "Start Next.js development server (npm run dev)"
+  - "Review current component architecture"
+  - "Check database service integration status"
+  - "Identify mock data that needs replacement"
+
+common_tasks:
+  - Replace lib/data.ts mock data with lib/db-services.ts
+  - Update React components for real data integration
+  - Optimize dashboard performance with 245+ users
+  - Enhance user interface based on real usage patterns
+  - Implement error handling for database operations
+  - Test responsive design across devices
+
+context_files:
+  - "app/**/*.tsx"
+  - "components/**/*.tsx"
+  - "lib/db-services.ts"
+  - "lib/data.ts"
+  - "lib/types.ts"
+
+success_metrics:
+  - All components use real database data
+  - Dashboard loads in < 2 seconds
+  - Zero UI errors with 245+ users
+  - 100% responsive design compatibility
+  - Excellent accessibility scores
+  - Smooth user experience across all features

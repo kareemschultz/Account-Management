@@ -1,0 +1,206 @@
+# Docker Compose for Account Management Platform
+# Production-grade setup with PostgreSQL, Redis, and nginx
+
+version: '3.8'
+
+networks:
+  esm_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+  backup_data:
+    driver: local
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17.6-alpine
+    container_name: esm_postgres
+    restart: unless-stopped
+    networks:
+      esm_network:
+        ipv4_address: 172.20.0.10
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-esm_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - backup_data:/backup
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-esm_platform}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c log_statement=mod
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: esm_redis
+    restart: unless-stopped
+    networks:
+      esm_network:
+        ipv4_address: 172.20.0.20
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-your_redis_password}
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --requirepass ${REDIS_PASSWORD:-your_redis_password}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: esm_app
+    restart: unless-stopped
+    networks:
+      esm_network:
+        ipv4_address: 172.20.0.30
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-your_secure_password}@postgres:5432/${POSTGRES_DB:-esm_platform}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-your_redis_password}@redis:6379
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-your_nextauth_secret}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost}
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+
+  # Nginx Load Balancer & Reverse Proxy
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: esm_nginx
+    restart: unless-stopped
+    networks:
+      esm_network:
+        ipv4_address: 172.20.0.40
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  # Database Backup Service
+  db_backup:
+    image: postgres:17.6-alpine
+    container_name: esm_db_backup
+    restart: "no"
+    networks:
+      - esm_network
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-esm_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - backup_data:/backup
+      - ./docker/scripts:/scripts:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /scripts/backup.sh
+    security_opt:
+      - no-new-privileges:true
+
+  # Monitoring & Health Check Service
+  healthcheck:
+    image: alpine:3.19
+    container_name: esm_healthcheck
+    restart: unless-stopped
+    networks:
+      - esm_network
+    volumes:
+      - ./docker/scripts:/scripts:ro
+      - nginx_logs:/logs/nginx:ro
+    environment:
+      CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-300}
+    command: /scripts/healthcheck.sh
+    depends_on:
+      - app
+      - postgres
+      - redis
+      - nginx
+    security_opt:
+      - no-new-privileges:true

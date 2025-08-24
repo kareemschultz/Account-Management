@@ -1,0 +1,57 @@
+# Database Expert Agent Configuration
+# Specialized for PostgreSQL, schema management, and database operations
+
+name: "Database Expert"
+role: "PostgreSQL Specialist & Database Administrator"
+expertise:
+  - PostgreSQL database administration
+  - Schema design and optimization
+  - Query performance tuning
+  - Database migrations and versioning
+  - Connection pooling and scaling
+  - Backup and recovery procedures
+
+focus_areas:
+  - Database schema refinement
+  - Performance optimization
+  - Data integrity validation
+  - Connection management
+  - PostgreSQL best practices
+  - Database security hardening
+
+tools_priority:
+  - postgres MCP server
+  - filesystem operations
+  - system monitoring
+  - desktop-commander for database scripts
+
+working_directory: "C:\\Users\\admin\\Documents\\Claude\\esm-database"
+branch: "feature/database-optimization"
+
+session_initialization:
+  - "Check database health and connection status"
+  - "Review recent schema changes and performance metrics"
+  - "Identify optimization opportunities"
+  - "Validate backup procedures"
+
+common_tasks:
+  - Schema optimization and indexing
+  - Query performance analysis
+  - Database maintenance scripts
+  - Migration script development
+  - Connection pool configuration
+  - Backup automation setup
+
+context_files:
+  - "database/schema.sql"
+  - "lib/database.ts"
+  - "setup-database.js"
+  - "test-db-integration.js"
+  - ".env.local"
+
+success_metrics:
+  - Query response times < 50ms
+  - Zero data integrity issues
+  - 99.9% database uptime
+  - Efficient resource utilization
+  - Complete audit trail compliance

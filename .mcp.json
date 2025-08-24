@@ -1,0 +1,233 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-playwright"],
+      "env": {
+        "PLAYWRIGHT_BROWSERS_PATH": "./playwright-profile"
+      }
+    }
+  },
+  "playwright": {
+    "baseUrl": "http://localhost:3000",
+    "browserProfile": "./playwright-profile",
+    "screenshotDirectory": "./screenshots",
+    "testTimeout": 30000,
+    "actionTimeout": 5000,
+    "navigationTimeout": 30000,
+    "globalSetup": "./playwright-profile/global-setup.ts",
+    "globalTeardown": "./playwright-profile/global-teardown.ts",
+    "use": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "ignoreHTTPSErrors": true,
+      "screenshot": "only-on-failure",
+      "video": "retain-on-failure",
+      "trace": "retain-on-failure",
+      "actionTimeout": 5000,
+      "navigationTimeout": 30000
+    },
+    "projects": [
+      {
+        "name": "desktop-chrome",
+        "use": {
+          "browserName": "chromium",
+          "viewport": { "width": 1440, "height": 900 }
+        }
+      },
+      {
+        "name": "mobile-chrome",
+        "use": {
+          "browserName": "chromium",
+          "viewport": { "width": 375, "height": 667 },
+          "isMobile": true,
+          "hasTouch": true
+        }
+      },
+      {
+        "name": "tablet-chrome",
+        "use": {
+          "browserName": "chromium",
+          "viewport": { "width": 768, "height": 1024 },
+          "isMobile": true,
+          "hasTouch": true
+        }
+      }
+    ]
+  },
+  "visualTesting": {
+    "screenshotComparison": {
+      "threshold": 0.1,
+      "maxDiffPixels": 100,
+      "animations": "disabled"
+    },
+    "pages": {
+      "dashboard": {
+        "url": "/",
+        "waitFor": "[data-testid='dashboard-loaded']",
+        "actions": [
+          "wait-for-load-state",
+          "wait-for-timeout:2000"
+        ]
+      },
+      "users": {
+        "url": "/users",
+        "waitFor": "[data-testid='users-table']",
+        "actions": [
+          "wait-for-load-state"
+        ]
+      },
+      "services": {
+        "url": "/services",
+        "waitFor": "[data-testid='services-grid']",
+        "actions": [
+          "wait-for-load-state"
+        ]
+      },
+      "compliance": {
+        "url": "/compliance",
+        "waitFor": "[data-testid='compliance-dashboard']",
+        "actions": [
+          "wait-for-load-state"
+        ]
+      },
+      "analytics": {
+        "url": "/analytics",
+        "waitFor": "[data-testid='analytics-charts']",
+        "actions": [
+          "wait-for-load-state",
+          "wait-for-timeout:3000"
+        ]
+      },
+      "vpn": {
+        "url": "/vpn",
+        "waitFor": "[data-testid='vpn-dashboard']",
+        "actions": [
+          "wait-for-load-state"
+        ]
+      },
+      "access-matrix": {
+        "url": "/access-matrix",
+        "waitFor": "[data-testid='access-matrix']",
+        "actions": [
+          "wait-for-load-state",
+          "wait-for-timeout:2000"
+        ]
+      }
+    }
+  },
+  "authentication": {
+    "method": "session-storage",
+    "storageFile": "./playwright-profile/auth.json",
+    "loginUrl": "/auth/login",
+    "loginSelectors": {
+      "email": "[data-testid='email-input']",
+      "password": "[data-testid='password-input']",
+      "submitButton": "[data-testid='login-button']"
+    },
+    "successIndicator": "[data-testid='dashboard-loaded']",
+    "credentials": {
+      "testUser": {
+        "email": "admin@test.com",
+        "password": "admin123"
+      }
+    }
+  },
+  "accessibilityTesting": {
+    "standard": "WCAG21AA",
+    "includedImpacts": ["critical", "serious"],
+    "excludedRules": [],
+    "tags": ["wcag2a", "wcag2aa", "wcag21aa"],
+    "reportFormat": "json",
+    "outputPath": "./screenshots/accessibility-reports"
+  },
+  "performance": {
+    "metrics": {
+      "firstContentfulPaint": 1500,
+      "largestContentfulPaint": 2500,
+      "cumulativeLayoutShift": 0.1,
+      "firstInputDelay": 100
+    },
+    "budgets": {
+      "javascript": "500kb",
+      "css": "100kb",
+      "images": "1mb",
+      "total": "2mb"
+    }
+  },
+  "customCommands": {
+    "quick-visual-check": {
+      "description": "Take screenshots of main pages and check for console errors",
+      "steps": [
+        "navigate-to:dashboard",
+        "screenshot:dashboard-overview",
+        "check-console-errors",
+        "navigate-to:users",
+        "screenshot:users-table",
+        "check-console-errors",
+        "navigate-to:services",
+        "screenshot:services-grid",
+        "check-console-errors"
+      ]
+    },
+    "design-review": {
+      "description": "Comprehensive design validation across all breakpoints",
+      "steps": [
+        "set-viewport:desktop",
+        "screenshot-all-pages",
+        "set-viewport:tablet",
+        "screenshot-all-pages",
+        "set-viewport:mobile",
+        "screenshot-all-pages",
+        "accessibility-scan:all-pages",
+        "performance-audit:critical-pages"
+      ]
+    },
+    "accessibility-audit": {
+      "description": "WCAG compliance check for all pages",
+      "steps": [
+        "accessibility-scan:dashboard",
+        "accessibility-scan:users",
+        "accessibility-scan:services",
+        "accessibility-scan:compliance",
+        "accessibility-scan:analytics",
+        "generate-accessibility-report"
+      ]
+    },
+    "mobile-test": {
+      "description": "Responsive design validation for mobile devices",
+      "steps": [
+        "set-viewport:mobile",
+        "navigate-to:dashboard",
+        "test-touch-interactions",
+        "screenshot:mobile-dashboard",
+        "navigate-to:users",
+        "test-table-scrolling",
+        "screenshot:mobile-users",
+        "test-navigation-menu"
+      ]
+    }
+  },
+  "reporting": {
+    "formats": ["html", "json"],
+    "outputDirectory": "./screenshots/reports",
+    "includeScreenshots": true,
+    "includeVideos": true,
+    "includeTraces": true,
+    "emailNotifications": {
+      "enabled": false,
+      "recipients": [],
+      "onFailure": true,
+      "onSuccess": false
+    }
+  },
+  "ci": {
+    "enabled": true,
+    "triggers": ["push", "pull_request"],
+    "parallelJobs": 3,
+    "retries": 2,
+    "failureThreshold": 5
+  }
+}
